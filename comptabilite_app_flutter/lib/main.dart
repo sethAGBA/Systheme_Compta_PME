@@ -10,7 +10,9 @@ import 'features/accounting/screens/journal_screen.dart';
 import 'core/services/api_service.dart';
 
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
+  
   runApp(MyApp());
 }
 
@@ -21,7 +23,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'ComptaFacile',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: FutureBuilder<bool>(

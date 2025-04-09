@@ -3,10 +3,13 @@
 import 'package:ComptaFacile/features/accounting/screens/journal_screen.dart';
 import 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 // import 'package:gestion_comptable_pme/features/accounting/screens/journal_screen.dart';
 // import 'package:gestion_comptable_pme/features/invoicing/screens/invoice_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import '../../../core/services/api_service.dart';
 import '../../auth/screens/login_screen.dart';
 // import '../screens/journal_screen.dart'; // Import pour la navigation
@@ -70,78 +73,237 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceScreen()));
     _fetchDashboardData(); // Rafraîchit au retour
   }
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Container(
+     decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.blue.shade800, Colors.white],
+      ),
+    ),
+      child: CustomScrollView(
+        slivers: [
+          if (_isLoading)
+            SliverFillRemaining(
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+                ),
+              ),
+            )
+          else if (_errorMessage != null)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 80, color: Colors.red.shade300),
+                    SizedBox(height: 16),
+                    Text(
+                      _errorMessage!,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.red.shade400,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...[
+              SliverAppBar(
+                floating: false,
+                pinned: true,
+                stretch: true,
+                expandedHeight: 0,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                flexibleSpace: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade800, Colors.blue.shade500],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+                title: Text(
+                  'Tableau de bord',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                centerTitle: true,
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.logout, color: Colors.white),
+                    onPressed: _logout,
+                  ),
+                ],
+              ),
+              SliverPadding(
+                padding: EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Text(
+                      'Bienvenue dans ComptaFacile',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade900,
+                      ),
+                    ).animate().fadeIn().slideX(),
+                    SizedBox(height: 20),
+                    _buildMetricsGrid(),
+                    SizedBox(height: 20),
+                    _buildActionButtons(),
+                  ]),
+                ),
+              ),
+            ],
+        ],
+      ),
+      ),
+  
+  );
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Tableau de bord', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue.shade700,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
+// Ajoutez cette nouvelle méthode pour la grille de métriques
+Widget _buildMetricsGrid() {
+  return GridView.count(
+    shrinkWrap: true,
+    crossAxisCount: 2,
+    childAspectRatio: 1.3, // Ajusté pour donner plus d'espace vertical
+    crossAxisSpacing: 16,
+    mainAxisSpacing: 16,
+    physics: NeverScrollableScrollPhysics(),
+    children: [
+      _buildMetricCard(
+        'CA',  // Raccourci pour Chiffre d'affaires
+        NumberFormat.compact().format(_dashboardData!['revenue']) + ' FCFA',
+        Icons.monetization_on,
+      ),
+      _buildMetricCard(
+        'Factures',
+        _dashboardData!['unpaidInvoices'].toString(),
+        Icons.receipt_long,
+      ),
+      _buildMetricCard(
+        'Solde',
+        NumberFormat.compact().format(_dashboardData!['totalBalance']) + ' FCFA',
+        Icons.account_balance_wallet,
+      ),
+      _buildMetricCard(
+        'Écritures',
+        _dashboardData!['totalEntries'].toString(),
+        Icons.description,
+      ),
+    ],
+  ).animate().fadeIn();
+}
+// Modifiez la méthode _buildMetricCard
+Widget _buildMetricCard(String title, String value, IconData icon) {
+  return Card(
+    elevation: 8,
+    shadowColor: Colors.blue.withOpacity(0.2),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    child: Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12), // Padding ajusté
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.blue.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 28, color: Colors.blue.shade700), // Taille d'icône réduite
+          SizedBox(height: 4), // Espacement réduit
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Flexible(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade700,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(child: Text(_errorMessage!, style: TextStyle(color: Colors.red)))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Bienvenue dans ComptaFacile',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 20),
-                      _buildMetricCard('Chiffre d\'affaires', '${_dashboardData!['revenue'].toStringAsFixed(0)} FCFA'),
-                      _buildMetricCard('Factures impayées', _dashboardData!['unpaidInvoices'].toString()),
-                      _buildMetricCard('Solde total', '${_dashboardData!['totalBalance'].toStringAsFixed(0)} FCFA'),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _navigateToJournal,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          minimumSize: Size(double.infinity, 54),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text('Aller au Journal', style: TextStyle(fontSize: 16)),
-                      ),
-                      SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _navigateToInvoices,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          minimumSize: Size(double.infinity, 54),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text('Gérer les Factures', style: TextStyle(fontSize: 16)),
-                      ),
-                    ],
-                  ),
-                ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value) {
-    return Card(
-      elevation: 4,
-      margin: EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(fontSize: 16, color: Colors.grey)),
-            SizedBox(height: 8),
-            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue.shade700)),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  ).animate().fadeIn().scale();
 }
+// Ajoutez cette nouvelle méthode pour les boutons d'action
+Widget _buildActionButtons() {
+  return Column(
+    children: [
+      _buildActionButton(
+        'Journal Comptable',
+        Icons.book,
+        _navigateToJournal,
+      ),
+      SizedBox(height: 12),
+      _buildActionButton(
+        'Gestion des Factures',
+        Icons.receipt,
+        _navigateToInvoices,
+      ),
+    ],
+  ).animate().fadeIn().slideY();
+}
+
+Widget _buildActionButton(String title, IconData icon, VoidCallback onPressed) {
+  return Container(
+    width: double.infinity,
+    height: 60,
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue.shade700,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        elevation: 4,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon),
+          SizedBox(width: 12),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}}
