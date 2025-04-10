@@ -13,13 +13,15 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/services/journal_service.dart';
 import '../../../core/constants/strings.dart';
-
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:async';
 class JournalScreen extends StatefulWidget {
   @override
   _JournalScreenState createState() => _JournalScreenState();
 }
 
 class _JournalScreenState extends State<JournalScreen> {
+  Timer? _debounce;
   final _descriptionController = TextEditingController();
   final _montantController = TextEditingController();
   final _entiteDebitController = TextEditingController();
@@ -49,9 +51,11 @@ class _JournalScreenState extends State<JournalScreen> {
     super.initState();
     _chargerEcritures();
     _chargerFactures();
-    _searchController.addListener(() => _filterEcritures());
+    _searchController.addListener(() {
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+      _debounce = Timer(const Duration(milliseconds: 300), _filterEcritures);
+    });
   }
-
   // Ajouter cette méthode
   Future<void> _chargerFactures() async {
     try {
@@ -64,167 +68,57 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-  // Future<void> _ajouterEcriture() async {
-  //   if (_descriptionController.text.isEmpty ||
-  //       _montantController.text.isEmpty ||
-  //       _entiteDebitController.text.isEmpty ||
-  //       _entiteCreditController.text.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(Strings.champsVides),
-  //         backgroundColor: Colors.red.shade400,
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //     return;
-  //   }
-
-  //   if (!RegExp(r'^\d*\.?\d+$').hasMatch(_montantController.text)) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(Strings.montantInvalide),
-  //         backgroundColor: Colors.red.shade400,
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //     return;
-  //   }
-
-  //   setState(() => _chargement = true);
-  //   try {
-  //     await _journalService.ajouterEcriture({
-  //       'description': _descriptionController.text,
-  //       'debitEntityType': _typeEntiteDebit,
-  //       'debitEntityName': _entiteDebitController.text,
-  //       'creditEntityType': _typeEntiteCredit,
-  //       'creditEntityName': _entiteCreditController.text,
-  //       'amount': double.parse(_montantController.text),
-  //       'reference':
-  //           _referenceController.text.isEmpty
-  //               ? null
-  //               : _referenceController.text,
-  //     });
-
-  //     setState(() {
-  //       _ecritures.add({
-  //         'description': _descriptionController.text,
-  //         'debitEntityType': _typeEntiteDebit,
-  //         'debitEntityName': _entiteDebitController.text,
-  //         'creditEntityType': _typeEntiteCredit,
-  //         'creditEntityName': _entiteCreditController.text,
-  //         'amount': double.parse(_montantController.text),
-  //         'reference':
-  //             _referenceController.text.isEmpty
-  //                 ? null
-  //                 : _referenceController.text,
-  //         'date': DateTime.now().toIso8601String(),
-  //       });
-  //       _filterEcritures();
-  //     });
-
-  //     // Réinitialisation des champs
-  //     _descriptionController.clear();
-  //     _montantController.clear();
-  //     _entiteDebitController.clear();
-  //     _entiteCreditController.clear();
-  //     _referenceController.clear();
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(Strings.ecritureAjoutee),
-  //         backgroundColor: Colors.green.shade400,
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('${Strings.erreurReseau}$e'),
-  //         backgroundColor: Colors.red.shade400,
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //   } finally {
-  //     setState(() => _chargement = false);
-  //   }
-  // }
   Future<void> _ajouterEcriture() async {
-    if (_descriptionController.text.isEmpty ||
-        _montantController.text.isEmpty ||
-        _entiteDebitController.text.isEmpty ||
-        _entiteCreditController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(Strings.champsVides),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    if (!RegExp(r'^\d*\.?\d+$').hasMatch(_montantController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(Strings.montantInvalide),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _chargement = true);
-    try {
-      final ecriture = {
-        'description': _descriptionController.text,
-        'debitEntityType': _typeEntiteDebit,
-        'debitEntityName': _entiteDebitController.text,
-        'creditEntityType': _typeEntiteCredit,
-        'creditEntityName': _entiteCreditController.text,
-        'amount': double.parse(_montantController.text),
-        'reference':
-            _referenceController.text.isEmpty
-                ? null
-                : _referenceController.text,
-      };
-      print(
-        'Données envoyées à ajouterEcriture: $ecriture',
-      ); // Log avant l'appel
-      final newEntry = await _journalService.ajouterEcriture(ecriture);
-      print('Réponse de ajouterEcriture: $newEntry'); // Log après l'appel
-
-      setState(() {
-        _ecritures.add(newEntry);
-        _filterEcritures();
-      });
-      _descriptionController.clear();
-      _montantController.clear();
-      _entiteDebitController.clear();
-      _entiteCreditController.clear();
-      _referenceController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(Strings.ecritureAjoutee),
-          backgroundColor: Colors.green.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      print('Erreur dans _ajouterEcriture: $e'); // Log de l'erreur
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${Strings.erreurReseau}$e'),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      setState(() => _chargement = false);
-    }
+  if (_descriptionController.text.isEmpty ||
+      _montantController.text.isEmpty ||
+      _entiteDebitController.text.isEmpty ||
+      _entiteCreditController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(Strings.champsVides), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+    return;
   }
 
+  if (!RegExp(r'^\d*\.?\d+$').hasMatch(_montantController.text)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(Strings.montantInvalide), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+    return;
+  }
+
+  setState(() => _chargement = true);
+  try {
+    final ecriture = {
+      'description': _descriptionController.text,
+      'debitEntityType': _typeEntiteDebit,
+      'debitEntityName': _entiteDebitController.text,
+      'creditEntityType': _typeEntiteCredit,
+      'creditEntityName': _entiteCreditController.text,
+      'amount': double.parse(_montantController.text),
+      'reference': _referenceController.text.isEmpty ? null : _referenceController.text,
+    };
+    await _journalService.ajouterEcriture(ecriture);
+    await _chargerEcritures();
+    _descriptionController.clear();
+    _montantController.clear();
+    _entiteDebitController.clear();
+    _entiteCreditController.clear();
+    _referenceController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(Strings.ecritureAjoutee), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } catch (e) {
+    print('Erreur dans _ajouterEcriture: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${Strings.erreurReseau}$e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } finally {
+    setState(() => _chargement = false);
+  }
+}
+ 
+ 
   Future<void> _chargerEcritures() async {
     setState(() => _chargement = true);
     try {
@@ -300,177 +194,82 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-  //Modifie _editEcriture pour inclure la référence
+
+
   Future<void> _editEcriture(Map<String, dynamic> ecriture) async {
-    // Initialisation sûre des contrôleurs avec gestion des null
-    final descriptionController = TextEditingController(
-      text: ecriture['description']?.toString() ?? '',
-    );
-    final montantController = TextEditingController(
-      text: ecriture['amount']?.toString() ?? '',
-    );
-    final entiteDebitController = TextEditingController(
-      text: ecriture['debitEntityName']?.toString() ?? '',
-    );
-    final entiteCreditController = TextEditingController(
-      text: ecriture['creditEntityName']?.toString() ?? '',
-    );
-    final referenceController = TextEditingController(
-      text: ecriture['reference']?.toString() ?? '',
-    );
+  final descriptionController = TextEditingController(text: ecriture['description']?.toString() ?? '');
+  final montantController = TextEditingController(text: ecriture['amount']?.toString() ?? '');
+  final entiteDebitController = TextEditingController(text: ecriture['debitEntityName']?.toString() ?? '');
+  final entiteCreditController = TextEditingController(text: ecriture['creditEntityName']?.toString() ?? '');
+  final referenceController = TextEditingController(text: ecriture['reference']?.toString() ?? '');
+  String? typeEntiteDebit = ecriture['debitEntityType']?.toString() ?? _typeOptions.first;
+  String? typeEntiteCredit = ecriture['creditEntityType']?.toString() ?? _typeOptions.first;
 
-    // Gestion sûre des types d'entités
-    String? typeEntiteDebit =
-        ecriture['debitEntityType']?.toString() ?? _typeOptions.first;
-    String? typeEntiteCredit =
-        ecriture['creditEntityType']?.toString() ?? _typeOptions.first;
-
-    final updated = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Modifier l’écriture "${ecriture['description']}"'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: descriptionController,
-                    decoration: InputDecoration(labelText: 'Description'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: typeEntiteDebit,
-                    items:
-                        _typeOptions
-                            .map(
-                              (type) => DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (value) => typeEntiteDebit = value,
-                    decoration: InputDecoration(labelText: 'Type Débit'),
-                  ),
-                  TextField(
-                    controller: entiteDebitController,
-                    decoration: InputDecoration(labelText: 'Entité Débit'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: typeEntiteCredit,
-                    items:
-                        _typeOptions
-                            .map(
-                              (type) => DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (value) => typeEntiteCredit = value,
-                    decoration: InputDecoration(labelText: 'Type Crédit'),
-                  ),
-                  TextField(
-                    controller: entiteCreditController,
-                    decoration: InputDecoration(labelText: 'Entité Crédit'),
-                  ),
-                  TextField(
-                    controller: montantController,
-                    decoration: InputDecoration(labelText: 'Montant (FCFA)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  TextField(
-                    controller: referenceController,
-                    decoration: InputDecoration(
-                      labelText: 'Référence (optionnel)',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (descriptionController.text.isEmpty ||
-                      montantController.text.isEmpty ||
-                      entiteDebitController.text.isEmpty ||
-                      entiteCreditController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(Strings.champsVides),
-                        backgroundColor: Colors.red.shade400,
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context, {
-                    'description': descriptionController.text,
-                    'debitEntityType': typeEntiteDebit,
-                    'debitEntityName': entiteDebitController.text,
-                    'creditEntityType': typeEntiteCredit,
-                    'creditEntityName': entiteCreditController.text,
-                    'amount': double.parse(montantController.text),
-                    'reference':
-                        referenceController.text.isEmpty
-                            ? null
-                            : referenceController.text,
-                    'date':
-                        ecriture['date'] ??
-                        DateTime.now()
-                            .toIso8601String(), // Conserver la date existante ou en créer une nouvelle
-                  });
-                },
-                child: Text('Enregistrer'),
-              ),
-            ],
-          ),
-    );
-
-    if (updated == null) return;
-
-    setState(() => _chargement = true);
-    try {
-      await _journalService.mettreAJourEcriture(ecriture['_id'], updated);
-
-      setState(() {
-        final index = _ecritures.indexWhere(
-          (ecr) => ecr['_id'] == ecriture['_id'],
-        );
-        if (index != -1) {
-          _ecritures[index] = {
-            ..._ecritures[index], // Garder les champs existants
-            ...updated, // Mettre à jour avec les nouvelles valeurs
-            '_id': ecriture['_id'], // Conserver l'ID
-          };
-          _filterEcritures();
-        }
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Écriture mise à jour'),
-          backgroundColor: Colors.green.shade400,
-          behavior: SnackBarBehavior.floating,
+  final updated = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Modifier l’écriture "${ecriture['description']}"'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: descriptionController, decoration: InputDecoration(labelText: 'Description')),
+            DropdownButtonFormField<String>(value: typeEntiteDebit, items: _typeOptions.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(), onChanged: (value) => typeEntiteDebit = value, decoration: InputDecoration(labelText: 'Type Débit')),
+            TextField(controller: entiteDebitController, decoration: InputDecoration(labelText: 'Entité Débit')),
+            DropdownButtonFormField<String>(value: typeEntiteCredit, items: _typeOptions.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(), onChanged: (value) => typeEntiteCredit = value, decoration: InputDecoration(labelText: 'Type Crédit')),
+            TextField(controller: entiteCreditController, decoration: InputDecoration(labelText: 'Entité Crédit')),
+            TextField(controller: montantController, decoration: InputDecoration(labelText: 'Montant (FCFA)'), keyboardType: TextInputType.number),
+            TextField(controller: referenceController, decoration: InputDecoration(labelText: 'Référence (optionnel)')),
+          ],
         ),
-      );
-    } catch (e) {
-      print('Erreur dans _editEcriture: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la mise à jour : $e'),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
+        TextButton(
+          onPressed: () {
+            if (descriptionController.text.isEmpty || montantController.text.isEmpty || entiteDebitController.text.isEmpty || entiteCreditController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.champsVides), backgroundColor: Colors.red.shade400));
+              return;
+            }
+            if (!RegExp(r'^\d*\.?\d+$').hasMatch(montantController.text)) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.montantInvalide), backgroundColor: Colors.red.shade400));
+              return;
+            }
+            Navigator.pop(context, {
+              'description': descriptionController.text,
+              'debitEntityType': typeEntiteDebit,
+              'debitEntityName': entiteDebitController.text,
+              'creditEntityType': typeEntiteCredit,
+              'creditEntityName': entiteCreditController.text,
+              'amount': double.parse(montantController.text),
+              'reference': referenceController.text.isEmpty ? null : referenceController.text,
+              'date': ecriture['date'] ?? DateTime.now().toIso8601String(),
+            });
+          },
+          child: Text('Enregistrer'),
         ),
-      );
-    } finally {
-      setState(() => _chargement = false);
-    }
+      ],
+    ),
+  );
+
+  if (updated == null) return;
+
+  setState(() => _chargement = true);
+  try {
+    await _journalService.mettreAJourEcriture(ecriture['_id'], updated);
+    await _chargerEcritures(); // Recharge les données pour synchronisation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Écriture mise à jour'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } catch (e) {
+    print('Erreur dans _editEcriture: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors de la mise à jour : $e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } finally {
+    setState(() => _chargement = false);
   }
+}
 
   void _filterEcritures() {
     final query = _searchController.text.toLowerCase().trim();
@@ -758,18 +557,57 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  //
   Future<bool> _requestStoragePermission() async {
-    if (await Permission.storage.request().isGranted) {
-      return true;
+    // Vérifier si on est sur Android
+    if (!Platform.isAndroid) {
+      return true; // Pas besoin de permission sur iOS
+    }
+
+    // Obtenir la version Android
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+
+    if (sdkInt >= 33) {
+      // Android 13 et plus
+      final status = await Permission.manageExternalStorage.request();
+      if (status.isGranted) {
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Permission de gestion du stockage refusée'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Paramètres',
+              textColor: Colors.white,
+              onPressed: () => openAppSettings(),
+            ),
+          ),
+        );
+        return false;
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Permission de stockage refusée'),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return false;
+      // Android 12 et moins
+      final status = await Permission.storage.request();
+      if (status.isGranted) {
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Permission de stockage refusée'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Paramètres',
+              textColor: Colors.white,
+              onPressed: () => openAppSettings(),
+            ),
+          ),
+        );
+        return false;
+      }
     }
   }
 
@@ -1451,145 +1289,6 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  // Widget _buildEcrituresList() {
-  //   return ListView.builder(
-  //     physics: BouncingScrollPhysics(),
-  //     itemCount: _filteredEcritures.length,
-  //     itemBuilder: (context, index) {
-  //       final ecriture = _filteredEcritures[index];
-  //       final date = DateTime.parse(ecriture['date']).toLocal();
-  //       final debit =
-  //           ecriture.containsKey('debitEntityType')
-  //               ? '${ecriture['debitEntityType']} (${ecriture['debitEntityName']})'
-  //               : ecriture['debitAccount'] ?? 'N/A';
-  //       final credit =
-  //           ecriture.containsKey('creditEntityType')
-  //               ? '${ecriture['creditEntityType']} (${ecriture['creditEntityName']})'
-  //               : ecriture['creditAccount'] ?? 'N/A';
-  //       return Container(
-  //         margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-  //         decoration: BoxDecoration(
-  //           gradient: LinearGradient(
-  //             colors: [Colors.white, Colors.blue.shade50.withOpacity(0.3)],
-  //             begin: Alignment.centerLeft,
-  //             end: Alignment.centerRight,
-  //           ),
-  //           borderRadius: BorderRadius.circular(16),
-  //           border: Border.all(
-  //             color: Colors.blue.shade100.withOpacity(0.5),
-  //             width: 0.5,
-  //           ),
-  //         ),
-  //         child: ExpansionTile(
-  //           leading: CircleAvatar(
-  //             radius: 25,
-  //             backgroundColor: Colors.blue.shade100,
-  //             child: Icon(
-  //               Icons.receipt_long,
-  //               color: Colors.blue.shade800,
-  //               size: 25,
-  //             ),
-  //           ),
-  //           title: Text(
-  //             ecriture['description'],
-  //             style: GoogleFonts.poppins(
-  //               fontWeight: FontWeight.w600,
-  //               fontSize: 16,
-  //             ),
-  //             overflow: TextOverflow.ellipsis,
-  //           ),
-  //           subtitle: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Text(
-  //                 'Date: ${date.day}/${date.month}/${date.year}',
-  //                 style: GoogleFonts.poppins(
-  //                   fontSize: 12,
-  //                   color: Colors.grey.shade600,
-  //                 ),
-  //               ),
-  //               SizedBox(height: 4),
-  //               Text(
-  //                 '${ecriture['amount']} FCFA',
-  //                 style: GoogleFonts.poppins(
-  //                   color: Colors.blue.shade700,
-  //                   fontWeight: FontWeight.w500,
-  //                 ),
-  //               ),
-  //               if (ecriture['reference'] != null) ...[
-  //                 SizedBox(height: 4),
-  //                 Text(
-  //                   'Ref: ${ecriture['reference']}',
-  //                   style: GoogleFonts.poppins(
-  //                     fontSize: 12,
-  //                     color: Colors.grey.shade600,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ],
-  //           ),
-  //           trailing: Row(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               IconButton(
-  //                 icon: Icon(Icons.edit, color: Colors.blue.shade400, size: 25),
-  //                 onPressed: () => _editEcriture(ecriture),
-  //               ),
-  //               IconButton(
-  //                 icon: Icon(
-  //                   Icons.delete,
-  //                   color: Colors.red.shade400,
-  //                   size: 25,
-  //                 ),
-  //                 onPressed:
-  //                     () => _deleteEcriture(
-  //                       ecriture['_id'],
-  //                       ecriture['description'],
-  //                     ),
-  //               ),
-  //             ],
-  //           ),
-  //           children: [
-  //             Padding(
-  //               padding: const EdgeInsets.all(16.0),
-  //               child: Column(
-  //                 children: [
-  //                   Row(
-  //                     children: [
-  //                       Icon(Icons.arrow_upward, color: Colors.green, size: 16),
-  //                       SizedBox(width: 4),
-  //                       Expanded(
-  //                         child: Text(
-  //                           'Débit: $debit',
-  //                           style: GoogleFonts.poppins(color: Colors.green),
-  //                           overflow: TextOverflow.ellipsis,
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   SizedBox(height: 8),
-  //                   Row(
-  //                     children: [
-  //                       Icon(Icons.arrow_downward, color: Colors.red, size: 16),
-  //                       SizedBox(width: 4),
-  //                       Expanded(
-  //                         child: Text(
-  //                           'Crédit: $credit',
-  //                           style: GoogleFonts.poppins(color: Colors.red),
-  //                           overflow: TextOverflow.ellipsis,
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ).animate().fadeIn().slideX();
-  //     },
-  //   );
-  // }
   Widget _buildEcrituresList() {
     return ListView.builder(
       physics: BouncingScrollPhysics(),
@@ -1739,6 +1438,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _descriptionController.dispose();
     _montantController.dispose();
     _entiteDebitController.dispose();

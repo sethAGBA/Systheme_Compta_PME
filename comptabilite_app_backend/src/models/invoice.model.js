@@ -1,3 +1,7 @@
+// This file defines the Invoice model for the MongoDB database using Mongoose.
+// It includes fields such as userId, number, clientName, amount, status, and createdAt.
+// The userId field references the User model to associate the invoice with a specific user.
+//le nom est invoice.model.js
 const mongoose = require('mongoose');
 
 const invoiceSchema = new mongoose.Schema({

@@ -456,7 +456,7 @@ Future<void> _exportToPdf() async {
     );
     return;
   }
-
+// if (!await _requestStoragePermission()) return;
   final pdf = pw.Document();
   pdf.addPage(
     pw.MultiPage(
@@ -701,169 +701,107 @@ Future<void> _exportToCsv() async {
 
   // Ajoute cette méthode dans _InvoiceScreenState
   Future<void> _deleteInvoice(String invoiceId, String invoiceNumber) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Supprimer la facture'),
-            content: Text(
-              'Voulez-vous vraiment supprimer la facture $invoiceNumber ?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text('Supprimer', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Supprimer la facture'),
+      content: Text('Voulez-vous vraiment supprimer la facture $invoiceNumber ?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
+        TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Supprimer', style: TextStyle(color: Colors.red))),
+      ],
+    ),
+  );
+
+  if (confirm != true) return;
+
+  setState(() => _isLoading = true);
+  try {
+    await _invoiceService.supprimerFacture(invoiceId);
+    await _fetchInvoices(); // Recharge les données depuis le serveur
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Facture supprimée'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
     );
-
-    if (confirm != true) return;
-
-    setState(() => _isLoading = true);
-    try {
-      await _invoiceService.supprimerFacture(
-        invoiceId,
-      ); // Ajoute cette méthode dans InvoiceService
-      setState(() {
-        _invoices.removeWhere((inv) => inv['_id'] == invoiceId);
-        _filterInvoices();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Facture supprimée'),
-          backgroundColor: Colors.green.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression : $e'),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  } catch (e) {
+    print('Erreur dans _deleteInvoice: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors de la suppression : $e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } finally {
+    setState(() => _isLoading = false);
   }
+}
 
   // Ajoute cette méthode dans _InvoiceScreenState
-  Future<void> _editInvoice(Map<String, dynamic> invoice) async {
-    final numberController = TextEditingController(text: invoice['number']);
-    final clientNameController = TextEditingController(
-      text: invoice['clientName'],
-    );
-    final amountController = TextEditingController(
-      text: invoice['amount'].toString(),
-    );
+ Future<void> _editInvoice(Map<String, dynamic> invoice) async {
+  final numberController = TextEditingController(text: invoice['number']);
+  final clientNameController = TextEditingController(text: invoice['clientName']);
+  final amountController = TextEditingController(text: invoice['amount'].toString());
 
-    final updated = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Modifier la facture ${invoice['number']}'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: numberController,
-                    decoration: InputDecoration(labelText: 'Numéro de facture'),
-                  ),
-                  TextField(
-                    controller: clientNameController,
-                    decoration: InputDecoration(labelText: 'Nom du client'),
-                  ),
-                  TextField(
-                    controller: amountController,
-                    decoration: InputDecoration(labelText: 'Montant (FCFA)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (numberController.text.isEmpty ||
-                      clientNameController.text.isEmpty ||
-                      amountController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(Strings.champsVides),
-                        backgroundColor: Colors.red.shade400,
-                      ),
-                    );
-                    return;
-                  }
-                  if (!RegExp(r'^\d*\.?\d+$').hasMatch(amountController.text)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(Strings.montantInvalide),
-                        backgroundColor: Colors.red.shade400,
-                      ),
-                    );
-                    return;
-                  }
-                  Navigator.pop(context, {
-                    'number': numberController.text,
-                    'clientName': clientNameController.text,
-                    'amount': double.parse(amountController.text),
-                  });
-                },
-                child: Text('Enregistrer'),
-              ),
-            ],
-          ),
-    );
-
-    if (updated == null) return;
-
-    setState(() => _isLoading = true);
-    try {
-      await _invoiceService.mettreAJourFacture(
-        invoice['_id'],
-        updated,
-      ); // Ajoute cette méthode dans InvoiceService
-      setState(() {
-        final index = _invoices.indexWhere(
-          (inv) => inv['_id'] == invoice['_id'],
-        );
-        if (index != -1) {
-          _invoices[index] = {..._invoices[index], ...updated};
-          _filterInvoices();
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Facture mise à jour'),
-          backgroundColor: Colors.green.shade400,
-          behavior: SnackBarBehavior.floating,
+  final updated = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Modifier la facture ${invoice['number']}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: numberController, decoration: InputDecoration(labelText: 'Numéro de facture')),
+            TextField(controller: clientNameController, decoration: InputDecoration(labelText: 'Nom du client')),
+            TextField(controller: amountController, decoration: InputDecoration(labelText: 'Montant (FCFA)'), keyboardType: TextInputType.number),
+          ],
         ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la mise à jour : $e'),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
+        TextButton(
+          onPressed: () {
+            if (numberController.text.isEmpty || clientNameController.text.isEmpty || amountController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.champsVides), backgroundColor: Colors.red.shade400));
+              return;
+            }
+            if (!RegExp(r'^\d*\.?\d+$').hasMatch(amountController.text)) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.montantInvalide), backgroundColor: Colors.red.shade400));
+              return;
+            }
+            Navigator.pop(context, {
+              'number': numberController.text,
+              'clientName': clientNameController.text,
+              'amount': double.parse(amountController.text),
+            });
+          },
+          child: Text('Enregistrer'),
         ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+      ],
+    ),
+  );
+
+  if (updated == null) {
+    numberController.dispose();
+    clientNameController.dispose();
+    amountController.dispose();
+    return;
   }
 
+  setState(() => _isLoading = true);
+  try {
+    await _invoiceService.mettreAJourFacture(invoice['_id'], updated);
+    await _fetchInvoices(); // Recharge les données depuis le serveur
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Facture mise à jour'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } catch (e) {
+    print('Erreur dans _editInvoice: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors de la mise à jour : $e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+    numberController.dispose();
+    clientNameController.dispose();
+    amountController.dispose();
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

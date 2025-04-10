@@ -1,3 +1,7 @@
+//ce fichier est le controller pour la gestion des factures
+// Il contient les fonctions pour créer, récupérer et mettre à jour les factures
+// Importation des modèles Invoice et JournalEntry
+// Il s'appel invoice.controller.js
 const Invoice = require('../models/invoice.model');
 const JournalEntry = require('../models/journal_entry.model');
 
@@ -31,7 +35,6 @@ exports.createInvoice = async (req, res) => {
   }
 };
 
-// Garde getInvoices et updateInvoiceStatus inchangés pour l'instant
 exports.getInvoices = async (req, res) => {
   const userId = req.user.userId;
   try {
@@ -72,5 +75,65 @@ exports.updateInvoiceStatus = async (req, res) => {
   } catch (err) {
     console.error('Erreur dans updateInvoiceStatus:', err);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+// Nouvelle méthode : Supprimer une facture
+exports.deleteInvoice = async (req, res) => {
+  const invoiceId = req.params.id;
+  const userId = req.user.userId;
+
+  console.log('Requête deleteInvoice:', { invoiceId, userId });
+
+  try {
+    const invoice = await Invoice.findOneAndDelete({ _id: invoiceId, userId });
+    if (!invoice) {
+      return res.status(404).json({ error: 'Facture non trouvée' });
+    }
+    console.log('Facture supprimée:', invoice);
+
+    // Optionnel : Supprimer ou ajuster les écritures comptables associées
+    // await JournalEntry.deleteOne({ description: `Facture ${invoice.number} pour ${invoice.clientName}` });
+
+    res.status(200).json({ message: 'Facture supprimée avec succès' });
+  } catch (err) {
+    console.error('Erreur dans deleteInvoice:', err);
+    res.status(500).json({ error: 'Erreur serveur', details: err.message });
+  }
+};
+
+// Nouvelle méthode : Mettre à jour une facture
+exports.updateInvoice = async (req, res) => {
+  const invoiceId = req.params.id;
+  const userId = req.user.userId;
+  const { number, clientName, amount } = req.body;
+
+  console.log('Requête updateInvoice:', { invoiceId, userId, number, clientName, amount });
+
+  try {
+    const invoice = await Invoice.findOneAndUpdate(
+      { _id: invoiceId, userId },
+      { number, clientName, amount },
+      { new: true }
+    );
+    if (!invoice) {
+      return res.status(404).json({ error: 'Facture non trouvée' });
+    }
+    console.log('Facture mise à jour:', invoice);
+
+    // Optionnel : Mettre à jour l’écriture comptable associée
+    await JournalEntry.updateOne(
+      { description: `Facture ${invoice.number} pour ${invoice.clientName}` },
+      {
+        description: `Facture ${number} pour ${clientName}`,
+        debitEntityName: clientName,
+        amount,
+      }
+    );
+
+    res.status(200).json(invoice);
+  } catch (err) {
+    console.error('Erreur dans updateInvoice:', err);
+    res.status(500).json({ error: 'Erreur serveur', details: err.message });
   }
 };

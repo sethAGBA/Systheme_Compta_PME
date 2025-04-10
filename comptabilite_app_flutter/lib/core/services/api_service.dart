@@ -80,7 +80,11 @@
 //   }
 // }
 
-
+//fichier api_service.dart
+// ce fichier est responsable de la gestion des opérations liées à l'API
+// il contient des méthodes pour la connexion, l'inscription, la sauvegarde et la récupération du token
+// il utilise le package http pour effectuer des requêtes HTTP
+// il utilise le package json pour encoder et décoder les données JSON
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';

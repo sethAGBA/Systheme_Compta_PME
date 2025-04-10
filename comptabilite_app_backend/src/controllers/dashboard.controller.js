@@ -1,3 +1,4 @@
+// ce fichier s'appel dashboard.controller.js
 const Invoice = require('../models/invoice.model');
 const JournalEntry = require('../models/journal_entry.model');
 

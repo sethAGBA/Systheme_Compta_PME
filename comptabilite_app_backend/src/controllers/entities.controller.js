@@ -1,3 +1,6 @@
+//ce fichier s'appel entities.controller.js
+
+
 const Supplier = require('../models/supplier.model');
 const Client = require('../models/client.model');
 const Bank = require('../models/bank.model');

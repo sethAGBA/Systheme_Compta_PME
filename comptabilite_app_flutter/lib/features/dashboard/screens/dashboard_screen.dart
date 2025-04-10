@@ -1,12 +1,14 @@
-// import 'package:comptabilite_app_flutter/features/accounting/screens/journal_screen.dart';
-// import 'package:comptabilite_app_flutter/features/invoicing/screens/invoice_screen.dart';
+
+//il s'appel dashboard_screen.dart
+// ce fichier contient la logique de l'écran du tableau de bord
+// il utilise le package http pour effectuer des requêtes HTTP
+// il utilise le package json pour encoder et décoder les données JSON
 import 'package:ComptaFacile/features/accounting/screens/journal_screen.dart';
 import 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'package:gestion_comptable_pme/features/accounting/screens/journal_screen.dart';
-// import 'package:gestion_comptable_pme/features/invoicing/screens/invoice_screen.dart';
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';

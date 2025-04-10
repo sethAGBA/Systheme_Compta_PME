@@ -1,3 +1,8 @@
+// This file defines the Client model for the application.
+//         description: `Paiement de la facture ${invoice.number}`,
+//         debitEntityType: 'Banque',
+//         debitEntityName: 'Banque Populaire',
+
 const mongoose = require('mongoose');
 
 const clientSchema = new mongoose.Schema({

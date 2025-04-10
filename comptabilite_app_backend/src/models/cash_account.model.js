@@ -1,3 +1,4 @@
+//le nom est cash_account.model.js
 const mongoose = require('mongoose');
 
 const cashAccountSchema = new mongoose.Schema({
