@@ -1,3 +1,8 @@
+//ce fichier contient des méthodes pour se connecter, s'inscrire, se déconnecter et obtenir le token d'authentification
+// il utilise le package http pour effectuer des requêtes HTTP
+// il utilise le package json pour encoder et décoder les données JSON
+//il s'appelle api_service.dart
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
@@ -45,4 +50,12 @@ class InvoiceService {
       throw Exception('Erreur: ${response.body}');
     }
   }
+
+Future<void> supprimerFacture(String id) async {
+  await http.delete(Uri.parse('${ApiService.baseUrl}/invoices/$id')); // Adapte selon ton API
+}
+
+Future<void> mettreAJourFacture(String id, Map<String, dynamic> data) async {
+  await http.put(Uri.parse('${ApiService.baseUrl}/invoices/$id'), body: json.encode(data), headers: {'Content-Type': 'application/json'});
+}
 }

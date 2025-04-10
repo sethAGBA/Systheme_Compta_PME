@@ -1,3 +1,5 @@
+//name is auth.routes.js
+// This file defines the routes for authentication in the application.
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');

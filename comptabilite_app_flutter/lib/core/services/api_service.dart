@@ -94,7 +94,9 @@ class ApiService {
   // Détermine l'URL de base en fonction de l'environnement et de la plateforme
   static String get baseUrl {
     if (isProduction) {
-      return 'https://afritrade-connect-api.onrender.com'; // URL de production
+      // return 'https://afritrade-connect-api.onrender.com'; // URL de production
+      return 'https://systheme-compta-pme.onrender.com'; // URL de production
+     
     }
 
     if (kIsWeb) {

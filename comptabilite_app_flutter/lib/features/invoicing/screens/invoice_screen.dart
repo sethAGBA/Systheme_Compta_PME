@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../../../core/services/invoice_service.dart';
 import '../../../core/constants/strings.dart';
 
@@ -28,6 +29,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _sortOption = 'Date croissante';
+  String? _statusFilter;
   final InvoiceService _invoiceService = InvoiceService();
 
   @override
@@ -150,50 +152,93 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     }
   }
 
-  void _filterInvoices() {
-    final query = _searchController.text.toLowerCase().trim();
-    setState(() {
-      _filteredInvoices =
-          _invoices.where((invoice) {
-            final invoiceDate = DateTime.parse(invoice['createdAt']);
-            final matchesDate =
-                (_startDate == null || invoiceDate.isAfter(_startDate!)) &&
-                (_endDate == null ||
-                    invoiceDate.isBefore(_endDate!.add(Duration(days: 1))));
-            final matchesText =
-                invoice['number'].toLowerCase().contains(query) ||
-                invoice['clientName'].toLowerCase().contains(query);
-            return matchesDate && (query.isEmpty || matchesText);
-          }).toList();
+  // void _filterInvoices() {
+  //   final query = _searchController.text.toLowerCase().trim();
+  //   setState(() {
+  //     _filteredInvoices =
+  //         _invoices.where((invoice) {
+  //           final invoiceDate = DateTime.parse(invoice['createdAt']);
+  //           final matchesDate =
+  //               (_startDate == null || invoiceDate.isAfter(_startDate!)) &&
+  //               (_endDate == null ||
+  //                   invoiceDate.isBefore(_endDate!.add(Duration(days: 1))));
+  //           final matchesText =
+  //               invoice['number'].toLowerCase().contains(query) ||
+  //               invoice['clientName'].toLowerCase().contains(query);
+  //           return matchesDate && (query.isEmpty || matchesText);
+  //         }).toList();
 
-      switch (_sortOption) {
-        case 'Date croissante':
-          _filteredInvoices.sort(
-            (a, b) => DateTime.parse(
-              a['createdAt'],
-            ).compareTo(DateTime.parse(b['createdAt'])),
-          );
-          break;
-        case 'Date décroissante':
-          _filteredInvoices.sort(
-            (a, b) => DateTime.parse(
-              b['createdAt'],
-            ).compareTo(DateTime.parse(a['createdAt'])),
-          );
-          break;
-        case 'Montant croissant':
-          _filteredInvoices.sort(
-            (a, b) => (a['amount'] as num).compareTo(b['amount'] as num),
-          );
-          break;
-        case 'Montant décroissant':
-          _filteredInvoices.sort(
-            (a, b) => (b['amount'] as num).compareTo(a['amount'] as num),
-          );
-          break;
-      }
-    });
-  }
+  //     switch (_sortOption) {
+  //       case 'Date croissante':
+  //         _filteredInvoices.sort(
+  //           (a, b) => DateTime.parse(
+  //             a['createdAt'],
+  //           ).compareTo(DateTime.parse(b['createdAt'])),
+  //         );
+  //         break;
+  //       case 'Date décroissante':
+  //         _filteredInvoices.sort(
+  //           (a, b) => DateTime.parse(
+  //             b['createdAt'],
+  //           ).compareTo(DateTime.parse(a['createdAt'])),
+  //         );
+  //         break;
+  //       case 'Montant croissant':
+  //         _filteredInvoices.sort(
+  //           (a, b) => (a['amount'] as num).compareTo(b['amount'] as num),
+  //         );
+  //         break;
+  //       case 'Montant décroissant':
+  //         _filteredInvoices.sort(
+  //           (a, b) => (b['amount'] as num).compareTo(a['amount'] as num),
+  //         );
+  //         break;
+  //     }
+  //   });
+  // }
+
+
+
+void _filterInvoices() {
+  final query = _searchController.text.toLowerCase().trim();
+  setState(() {
+    _filteredInvoices = _invoices.where((invoice) {
+      // Filtre par date
+      final invoiceDate = DateTime.parse(invoice['createdAt']);
+      final matchesDate = (_startDate == null || invoiceDate.isAfter(_startDate!)) &&
+          (_endDate == null || invoiceDate.isBefore(_endDate!.add(Duration(days: 1))));
+      
+      // Filtre par texte
+      final matchesText = invoice['number'].toLowerCase().contains(query) || 
+                         invoice['clientName'].toLowerCase().contains(query);
+      
+      // Filtre par statut
+      final matchesStatus = _statusFilter == null || invoice['status'] == _statusFilter;
+      
+      return matchesDate && (query.isEmpty || matchesText) && matchesStatus;
+    }).toList();
+
+    // Tri
+    switch (_sortOption) {
+      case 'Date croissante':
+        _filteredInvoices.sort((a, b) => DateTime.parse(a['createdAt'])
+            .compareTo(DateTime.parse(b['createdAt'])));
+        break;
+      case 'Date décroissante':
+        _filteredInvoices.sort((a, b) => DateTime.parse(b['createdAt'])
+            .compareTo(DateTime.parse(a['createdAt'])));
+        break;
+      case 'Montant croissant':
+        _filteredInvoices.sort((a, b) => (a['amount'] as num).compareTo(b['amount'] as num));
+        break;
+      case 'Montant décroissant':
+        _filteredInvoices.sort((a, b) => (b['amount'] as num).compareTo(a['amount'] as num));
+        break;
+    }
+  });
+}
+
+
 
   Future<void> _selectDateRange(BuildContext context) async {
     final picked = await showDateRangePicker(
@@ -242,233 +287,580 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return true; // Pas besoin de permission sur Android 11+ pour "Documents" ou sur iOS
   }
 
-  Future<void> _exportToPdf() async {
-    if (_filteredInvoices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(Strings.aucuneFacture),
-          backgroundColor: Colors.orange.shade400,
-        ),
-      );
-      return;
-    }
+  // Future<void> _exportToPdf() async {
+  //   if (_filteredInvoices.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(Strings.aucuneFacture),
+  //         backgroundColor: Colors.orange.shade400,
+  //       ),
+  //     );
+  //     return;
+  //   }
 
-    final pdf = pw.Document();
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.all(32),
-        build:
-            (pw.Context context) => [
-              pw.Header(
-                level: 0,
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'Liste des Factures',
-                      style: pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.Text(
-                      DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.black),
-                columnWidths: {
-                  0: pw.FlexColumnWidth(2),
-                  1: pw.FlexColumnWidth(3),
-                  2: pw.FlexColumnWidth(2),
-                  3: pw.FlexColumnWidth(2),
-                  4: pw.FlexColumnWidth(1.5),
-                },
-                children: [
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(color: PdfColors.grey200),
-                    children:
-                        ['Numéro', 'Client', 'Date', 'Montant (FCFA)', 'Statut']
-                            .map(
-                              (text) => pw.Padding(
-                                padding: pw.EdgeInsets.all(8),
-                                child: pw.Text(
-                                  text,
-                                  style: pw.TextStyle(
-                                    fontWeight: pw.FontWeight.bold,
-                                  ),
-                                  textAlign: pw.TextAlign.center,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                  ),
-                  ..._filteredInvoices.map((invoice) {
-                    final date = DateTime.parse(invoice['createdAt']).toLocal();
-                    return pw.TableRow(
-                      children: [
-                        pw.Padding(
-                          padding: pw.EdgeInsets.all(8),
-                          child: pw.Text(
-                            invoice['number'],
-                            textAlign: pw.TextAlign.center,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: pw.EdgeInsets.all(8),
-                          child: pw.Text(invoice['clientName']),
-                        ),
-                        pw.Padding(
-                          padding: pw.EdgeInsets.all(8),
-                          child: pw.Text(
-                            DateFormat('dd/MM/yyyy').format(date),
-                            textAlign: pw.TextAlign.center,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: pw.EdgeInsets.all(8),
-                          child: pw.Text(
-                            NumberFormat('#,###').format(invoice['amount']),
-                            textAlign: pw.TextAlign.right,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: pw.EdgeInsets.all(8),
-                          child: pw.Text(
-                            invoice['status'] == 'paid' ? 'Payée' : 'Impayée',
-                            textAlign: pw.TextAlign.center,
-                            style: pw.TextStyle(
-                              color:
-                                  invoice['status'] == 'paid'
-                                      ? PdfColors.green700
-                                      : PdfColors.orange700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ],
-              ),
-              pw.SizedBox(height: 20),
-              pw.Container(
-                alignment: pw.Alignment.centerRight,
-                child: pw.Text(
-                  'Total: ${NumberFormat('#,###').format(_filteredInvoices.fold(0.0, (sum, item) => sum + (item['amount'] as num)))} FCFA',
-                  style: pw.TextStyle(
-                    fontSize: 16,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
+  //   final pdf = pw.Document();
+  //   pdf.addPage(
+  //     pw.MultiPage(
+  //       pageFormat: PdfPageFormat.a4,
+  //       margin: pw.EdgeInsets.all(32),
+  //       build:
+  //           (pw.Context context) => [
+  //             pw.Header(
+  //               level: 0,
+  //               child: pw.Row(
+  //                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //                 children: [
+  //                   pw.Text(
+  //                     'Liste des Factures',
+  //                     style: pw.TextStyle(
+  //                       fontSize: 24,
+  //                       fontWeight: pw.FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                   pw.Text(
+  //                     DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+  //                     style: pw.TextStyle(
+  //                       fontSize: 14,
+  //                       color: PdfColors.grey700,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             pw.SizedBox(height: 20),
+  //             pw.Table(
+  //               border: pw.TableBorder.all(color: PdfColors.black),
+  //               columnWidths: {
+  //                 0: pw.FlexColumnWidth(2),
+  //                 1: pw.FlexColumnWidth(3),
+  //                 2: pw.FlexColumnWidth(2),
+  //                 3: pw.FlexColumnWidth(2),
+  //                 4: pw.FlexColumnWidth(1.5),
+  //               },
+  //               children: [
+  //                 pw.TableRow(
+  //                   decoration: pw.BoxDecoration(color: PdfColors.grey200),
+  //                   children:
+  //                       ['Numéro', 'Client', 'Date', 'Montant (FCFA)', 'Statut']
+  //                           .map(
+  //                             (text) => pw.Padding(
+  //                               padding: pw.EdgeInsets.all(8),
+  //                               child: pw.Text(
+  //                                 text,
+  //                                 style: pw.TextStyle(
+  //                                   fontWeight: pw.FontWeight.bold,
+  //                                 ),
+  //                                 textAlign: pw.TextAlign.center,
+  //                               ),
+  //                             ),
+  //                           )
+  //                           .toList(),
+  //                 ),
+  //                 ..._filteredInvoices.map((invoice) {
+  //                   final date = DateTime.parse(invoice['createdAt']).toLocal();
+  //                   return pw.TableRow(
+  //                     children: [
+  //                       pw.Padding(
+  //                         padding: pw.EdgeInsets.all(8),
+  //                         child: pw.Text(
+  //                           invoice['number'],
+  //                           textAlign: pw.TextAlign.center,
+  //                         ),
+  //                       ),
+  //                       pw.Padding(
+  //                         padding: pw.EdgeInsets.all(8),
+  //                         child: pw.Text(invoice['clientName']),
+  //                       ),
+  //                       pw.Padding(
+  //                         padding: pw.EdgeInsets.all(8),
+  //                         child: pw.Text(
+  //                           DateFormat('dd/MM/yyyy').format(date),
+  //                           textAlign: pw.TextAlign.center,
+  //                         ),
+  //                       ),
+  //                       pw.Padding(
+  //                         padding: pw.EdgeInsets.all(8),
+  //                         child: pw.Text(
+  //                           NumberFormat('#,###').format(invoice['amount']),
+  //                           textAlign: pw.TextAlign.right,
+  //                         ),
+  //                       ),
+  //                       pw.Padding(
+  //                         padding: pw.EdgeInsets.all(8),
+  //                         child: pw.Text(
+  //                           invoice['status'] == 'paid' ? 'Payée' : 'Impayée',
+  //                           textAlign: pw.TextAlign.center,
+  //                           style: pw.TextStyle(
+  //                             color:
+  //                                 invoice['status'] == 'paid'
+  //                                     ? PdfColors.green700
+  //                                     : PdfColors.orange700,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   );
+  //                 }).toList(),
+  //               ],
+  //             ),
+  //             pw.SizedBox(height: 20),
+  //             pw.Container(
+  //               alignment: pw.Alignment.centerRight,
+  //               child: pw.Text(
+  //                 'Total: ${NumberFormat('#,###').format(_filteredInvoices.fold(0.0, (sum, item) => sum + (item['amount'] as num)))} FCFA',
+  //                 style: pw.TextStyle(
+  //                   fontSize: 16,
+  //                   fontWeight: pw.FontWeight.bold,
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //     ),
+  //   );
+
+  //   try {
+  //     final file = File(
+  //       '/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.pdf',
+  //     );
+  //     await file.parent.create(recursive: true);
+  //     await file.writeAsBytes(await pdf.save());
+
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('PDF exporté dans Documents'),
+  //         backgroundColor: Colors.green.shade400,
+  //         behavior: SnackBarBehavior.floating,
+  //         duration: Duration(seconds: 5),
+  //         action: SnackBarAction(
+  //           label: 'OK',
+  //           textColor: Colors.white,
+  //           onPressed: () {},
+  //         ),
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     print('Erreur d\'export PDF: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('${Strings.erreurExport}$e'),
+  //         backgroundColor: Colors.red.shade400,
+  //         behavior: SnackBarBehavior.floating,
+  //       ),
+  //     );
+  //   }
+  // }
+Future<void> _exportToPdf() async {
+  if (_filteredInvoices.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(Strings.aucuneFacture), backgroundColor: Colors.orange.shade400),
+    );
+    return;
+  }
+
+  final pdf = pw.Document();
+  pdf.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: pw.EdgeInsets.all(32),
+      build: (pw.Context context) => [
+        pw.Header(
+          level: 0,
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Liste des Factures', 
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.Text(DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()), 
+                style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
             ],
+          ),
+        ),
+        pw.SizedBox(height: 20),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.black),
+          columnWidths: {
+            0: pw.FlexColumnWidth(2),
+            1: pw.FlexColumnWidth(3),
+            2: pw.FlexColumnWidth(2),
+            3: pw.FlexColumnWidth(2),
+            4: pw.FlexColumnWidth(1.5),
+          },
+          children: [
+            pw.TableRow(
+              decoration: pw.BoxDecoration(color: PdfColors.grey200),
+              children: [
+                'Numéro',
+                'Client',
+                'Date',
+                'Montant (FCFA)',
+                'Statut'
+              ].map((text) => pw.Padding(
+                padding: pw.EdgeInsets.all(8),
+                child: pw.Text(
+                  text,
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  textAlign: pw.TextAlign.center,
+                ),
+              )).toList(),
+            ),
+            ..._filteredInvoices.map((invoice) {
+              final date = DateTime.parse(invoice['createdAt']).toLocal();
+              return pw.TableRow(
+                children: [
+                  pw.Padding(
+                    padding: pw.EdgeInsets.all(8),
+                    child: pw.Text(invoice['number'], textAlign: pw.TextAlign.center)
+                  ),
+                  pw.Padding(
+                    padding: pw.EdgeInsets.all(8),
+                    child: pw.Text(invoice['clientName'])
+                  ),
+                  pw.Padding(
+                    padding: pw.EdgeInsets.all(8),
+                    child: pw.Text(
+                      DateFormat('dd/MM/yyyy').format(date),
+                      textAlign: pw.TextAlign.center
+                    )
+                  ),
+                  pw.Padding(
+                    padding: pw.EdgeInsets.all(8),
+                    child: pw.Text(
+                      NumberFormat('#,###').format(invoice['amount']),
+                      textAlign: pw.TextAlign.right
+                    )
+                  ),
+                  pw.Padding(
+                    padding: pw.EdgeInsets.all(8),
+                    child: pw.Text(
+                      invoice['status'] == 'paid' ? 'Payée' : 'Impayée',
+                      textAlign: pw.TextAlign.center
+                    )
+                  ),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
+        pw.SizedBox(height: 20),
+        pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(
+            'Total: ${NumberFormat('#,###').format(_filteredInvoices.fold(0.0, (sum, item) => sum + (item['amount'] as num)))} FCFA',
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  try {
+    final file = File('/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(await pdf.save());
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('PDF exporté dans Documents'),
+        backgroundColor: Colors.green.shade400,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Partager',
+          textColor: Colors.white,
+          onPressed: () => Share.shareXFiles([XFile(file.path)], text: 'Voici la liste des factures en PDF'),
+        ),
       ),
     );
+  } catch (e) {
+    print('Erreur d\'export PDF: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${Strings.erreurExport}$e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  }
+}
 
+
+  // Future<void> _exportToCsv() async {
+  //   if (_filteredInvoices.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(Strings.aucuneFacture),
+  //         backgroundColor: Colors.orange.shade400,
+  //         behavior: SnackBarBehavior.floating,
+  //       ),
+  //     );
+  //     return;
+  //   }
+
+  //   try {
+  //     String csvContent = 'Numéro,Client,Date,Montant (FCFA),Statut\n';
+
+  //     for (var invoice in _filteredInvoices) {
+  //       final date = DateTime.parse(invoice['createdAt']).toLocal();
+  //       final clientName = invoice['clientName'].toString().replaceAll(
+  //         ',',
+  //         ' ',
+  //       );
+
+  //       csvContent +=
+  //           '"${invoice['number']}",' +
+  //           '"$clientName",' +
+  //           '"${DateFormat('dd/MM/yyyy').format(date)}",' +
+  //           '"${NumberFormat('#,###').format(invoice['amount'])}",' +
+  //           '"${invoice['status'] == 'paid' ? 'Payée' : 'Impayée'}"\n';
+  //     }
+
+  //     final total = _filteredInvoices.fold(
+  //       0.0,
+  //       (sum, item) => sum + (item['amount'] as num),
+  //     );
+  //     csvContent += ',,,Total,${NumberFormat('#,###').format(total)} FCFA\n';
+
+  //     final file = File(
+  //       '/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.csv',
+  //     );
+  //     await file.parent.create(recursive: true);
+  //     await file.writeAsBytes(utf8.encode(csvContent));
+
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('CSV exporté dans Documents'),
+  //         backgroundColor: Colors.green.shade400,
+  //         behavior: SnackBarBehavior.floating,
+  //         duration: Duration(seconds: 5),
+  //         action: SnackBarAction(
+  //           label: 'OK',
+  //           textColor: Colors.white,
+  //           onPressed: () {},
+  //         ),
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     print('Erreur d\'export CSV: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('${Strings.erreurExport}$e'),
+  //         backgroundColor: Colors.red.shade400,
+  //         behavior: SnackBarBehavior.floating,
+  //       ),
+  //     );
+  //   }
+  // }
+
+
+Future<void> _exportToCsv() async {
+  if (_filteredInvoices.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(Strings.aucuneFacture), backgroundColor: Colors.orange.shade400, behavior: SnackBarBehavior.floating),
+    );
+    return;
+  }
+
+  try {
+    String csvContent = 'Numéro,Client,Date,Montant (FCFA),Statut\n';
+    
+    for (var invoice in _filteredInvoices) {
+      final date = DateTime.parse(invoice['createdAt']).toLocal();
+      final clientName = invoice['clientName'].toString().replaceAll(',', ' ');
+      
+      csvContent += '"${invoice['number']}",' +
+          '"$clientName",' +
+          '"${DateFormat('dd/MM/yyyy').format(date)}",' +
+          '"${NumberFormat('#,###').format(invoice['amount'])}",' +
+          '"${invoice['status'] == 'paid' ? 'Payée' : 'Impayée'}"\n';
+    }
+
+    final total = _filteredInvoices.fold(0.0, (sum, item) => sum + (item['amount'] as num));
+    csvContent += ',,,Total,${NumberFormat('#,###').format(total)} FCFA\n';
+
+    final file = File('/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.csv');
+    await file.parent.create(recursive: true);
+    await file.writeAsString(csvContent, encoding: utf8);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('CSV exporté dans Documents'),
+        backgroundColor: Colors.green.shade400,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Partager',
+          textColor: Colors.white,
+          onPressed: () => Share.shareXFiles([XFile(file.path)], text: 'Voici la liste des factures en CSV'),
+        ),
+      ),
+    );
+  } catch (e) {
+    print('Erreur d\'export CSV: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${Strings.erreurExport}$e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    );
+  }
+}
+
+
+
+  // Ajoute cette méthode dans _InvoiceScreenState
+  Future<void> _deleteInvoice(String invoiceId, String invoiceNumber) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Supprimer la facture'),
+            content: Text(
+              'Voulez-vous vraiment supprimer la facture $invoiceNumber ?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Supprimer', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
     try {
-      final file = File(
-        '/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(await pdf.save());
-
+      await _invoiceService.supprimerFacture(
+        invoiceId,
+      ); // Ajoute cette méthode dans InvoiceService
+      setState(() {
+        _invoices.removeWhere((inv) => inv['_id'] == invoiceId);
+        _filterInvoices();
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF exporté dans Documents'),
+          content: Text('Facture supprimée'),
           backgroundColor: Colors.green.shade400,
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
         ),
       );
     } catch (e) {
-      print('Erreur d\'export PDF: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${Strings.erreurExport}$e'),
+          content: Text('Erreur lors de la suppression : $e'),
           backgroundColor: Colors.red.shade400,
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _exportToCsv() async {
-    if (_filteredInvoices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(Strings.aucuneFacture),
-          backgroundColor: Colors.orange.shade400,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  // Ajoute cette méthode dans _InvoiceScreenState
+  Future<void> _editInvoice(Map<String, dynamic> invoice) async {
+    final numberController = TextEditingController(text: invoice['number']);
+    final clientNameController = TextEditingController(
+      text: invoice['clientName'],
+    );
+    final amountController = TextEditingController(
+      text: invoice['amount'].toString(),
+    );
 
+    final updated = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Modifier la facture ${invoice['number']}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: numberController,
+                    decoration: InputDecoration(labelText: 'Numéro de facture'),
+                  ),
+                  TextField(
+                    controller: clientNameController,
+                    decoration: InputDecoration(labelText: 'Nom du client'),
+                  ),
+                  TextField(
+                    controller: amountController,
+                    decoration: InputDecoration(labelText: 'Montant (FCFA)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (numberController.text.isEmpty ||
+                      clientNameController.text.isEmpty ||
+                      amountController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(Strings.champsVides),
+                        backgroundColor: Colors.red.shade400,
+                      ),
+                    );
+                    return;
+                  }
+                  if (!RegExp(r'^\d*\.?\d+$').hasMatch(amountController.text)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(Strings.montantInvalide),
+                        backgroundColor: Colors.red.shade400,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, {
+                    'number': numberController.text,
+                    'clientName': clientNameController.text,
+                    'amount': double.parse(amountController.text),
+                  });
+                },
+                child: Text('Enregistrer'),
+              ),
+            ],
+          ),
+    );
+
+    if (updated == null) return;
+
+    setState(() => _isLoading = true);
     try {
-      String csvContent = 'Numéro,Client,Date,Montant (FCFA),Statut\n';
-
-      for (var invoice in _filteredInvoices) {
-        final date = DateTime.parse(invoice['createdAt']).toLocal();
-        final clientName = invoice['clientName'].toString().replaceAll(
-          ',',
-          ' ',
+      await _invoiceService.mettreAJourFacture(
+        invoice['_id'],
+        updated,
+      ); // Ajoute cette méthode dans InvoiceService
+      setState(() {
+        final index = _invoices.indexWhere(
+          (inv) => inv['_id'] == invoice['_id'],
         );
-
-        csvContent +=
-            '"${invoice['number']}",' +
-            '"$clientName",' +
-            '"${DateFormat('dd/MM/yyyy').format(date)}",' +
-            '"${NumberFormat('#,###').format(invoice['amount'])}",' +
-            '"${invoice['status'] == 'paid' ? 'Payée' : 'Impayée'}"\n';
-      }
-
-      final total = _filteredInvoices.fold(
-        0.0,
-        (sum, item) => sum + (item['amount'] as num),
-      );
-      csvContent += ',,,Total,${NumberFormat('#,###').format(total)} FCFA\n';
-
-      final file = File(
-        '/storage/emulated/0/Documents/factures_${DateTime.now().millisecondsSinceEpoch}.csv',
-      );
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(utf8.encode(csvContent));
-
+        if (index != -1) {
+          _invoices[index] = {..._invoices[index], ...updated};
+          _filterInvoices();
+        }
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('CSV exporté dans Documents'),
+          content: Text('Facture mise à jour'),
           backgroundColor: Colors.green.shade400,
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
         ),
       );
     } catch (e) {
-      print('Erreur d\'export CSV: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${Strings.erreurExport}$e'),
+          content: Text('Erreur lors de la mise à jour : $e'),
           backgroundColor: Colors.red.shade400,
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -712,82 +1104,245 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     ).animate().fadeIn().slideX();
   }
 
-  Widget _buildSearchAndFilter() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            _buildTextField(
-              controller: _searchController,
-              label: 'Rechercher (numéro ou client)',
-              icon: Icons.search,
-            ),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _startDate != null && _endDate != null
-                        ? 'Période: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} - ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
-                        : 'Filtrer par date',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+  // Widget _buildSearchAndFilter() {
+  //   return Card(
+  //     elevation: 4,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(12),
+  //       child: Column(
+  //         children: [
+  //           _buildTextField(
+  //             controller: _searchController,
+  //             label: 'Rechercher (numéro ou client)',
+  //             icon: Icons.search,
+  //           ),
+  //           SizedBox(height: 10),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Expanded(
+  //                 child: Text(
+  //                   _startDate != null && _endDate != null
+  //                       ? 'Période: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} - ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+  //                       : 'Filtrer par date',
+  //                   style: GoogleFonts.poppins(
+  //                     fontSize: 14,
+  //                     color: Colors.grey.shade700,
+  //                   ),
+  //                   overflow: TextOverflow.ellipsis,
+  //                 ),
+  //               ),
+  //               IconButton(
+  //                 icon: Icon(Icons.calendar_today, color: Colors.blue.shade700),
+  //                 onPressed: () => _selectDateRange(context),
+  //               ),
+  //             ],
+  //           ),
+  //           SizedBox(height: 10),
+  //           DropdownButtonFormField<String>(
+  //             value: _sortOption,
+  //             items: const [
+  //               DropdownMenuItem(
+  //                 value: 'Date croissante',
+  //                 child: Text('Date croissante'),
+  //               ),
+  //               DropdownMenuItem(
+  //                 value: 'Date décroissante',
+  //                 child: Text('Date décroissante'),
+  //               ),
+  //               DropdownMenuItem(
+  //                 value: 'Montant croissant',
+  //                 child: Text('Montant croissant'),
+  //               ),
+  //               DropdownMenuItem(
+  //                 value: 'Montant décroissant',
+  //                 child: Text('Montant décroissant'),
+  //               ),
+  //             ],
+  //             onChanged:
+  //                 (value) => setState(() {
+  //                   _sortOption = value!;
+  //                   _filterInvoices();
+  //                 }),
+  //             decoration: InputDecoration(
+  //               labelText: 'Trier par',
+  //               labelStyle: GoogleFonts.poppins(),
+  //               border: OutlineInputBorder(
+  //                 borderRadius: BorderRadius.circular(12),
+  //               ),
+  //               filled: true,
+  //               fillColor: Colors.white,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+Widget _buildSearchAndFilter() {
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          _buildTextField(
+            controller: _searchController,
+            label: 'Rechercher (numéro ou client)',
+            icon: Icons.search,
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  _startDate != null && _endDate != null
+                      ? 'Période: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year} - ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                      : 'Filtrer par date',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                IconButton(
-                  icon: Icon(Icons.calendar_today, color: Colors.blue.shade700),
-                  onPressed: () => _selectDateRange(context),
-                ),
-              ],
-            ),
-            SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: _sortOption,
-              items: const [
-                DropdownMenuItem(
-                  value: 'Date croissante',
-                  child: Text('Date croissante'),
-                ),
-                DropdownMenuItem(
-                  value: 'Date décroissante',
-                  child: Text('Date décroissante'),
-                ),
-                DropdownMenuItem(
-                  value: 'Montant croissant',
-                  child: Text('Montant croissant'),
-                ),
-                DropdownMenuItem(
-                  value: 'Montant décroissant',
-                  child: Text('Montant décroissant'),
-                ),
-              ],
-              onChanged:
-                  (value) => setState(() {
-                    _sortOption = value!;
-                    _filterInvoices();
-                  }),
-              decoration: InputDecoration(
-                labelText: 'Trier par',
-                labelStyle: GoogleFonts.poppins(),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
               ),
+              IconButton(
+                icon: Icon(Icons.calendar_today, color: Colors.blue.shade700),
+                onPressed: () => _selectDateRange(context),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: _sortOption,
+            items: const [
+              DropdownMenuItem(value: 'Date croissante', child: Text('Date croissante')),
+              DropdownMenuItem(value: 'Date décroissante', child: Text('Date décroissante')),
+              DropdownMenuItem(value: 'Montant croissant', child: Text('Montant croissant')),
+              DropdownMenuItem(value: 'Montant décroissant', child: Text('Montant décroissant')),
+            ],
+            onChanged: (value) => setState(() {
+              _sortOption = value!;
+              _filterInvoices();
+            }),
+            decoration: InputDecoration(
+              labelText: 'Trier par',
+              labelStyle: GoogleFonts.poppins(),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
             ),
-          ],
-        ),
+          ),
+          SizedBox(height: 10),
+          DropdownButtonFormField<String?>(
+            value: _statusFilter,
+            items: const [
+              DropdownMenuItem(value: null, child: Text('Tous les statuts')),
+              DropdownMenuItem(value: 'paid', child: Text('Payée')),
+              DropdownMenuItem(value: 'unpaid', child: Text('Impayée')),
+            ],
+            onChanged: (value) => setState(() {
+              _statusFilter = value;
+              _filterInvoices();
+            }),
+            decoration: InputDecoration(
+              labelText: 'Filtrer par statut',
+              labelStyle: GoogleFonts.poppins(),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+  // Widget _buildInvoicesList() {
+  //   return ListView.builder(
+  //     padding: EdgeInsets.all(8),
+  //     itemCount: _filteredInvoices.length,
+  //     itemBuilder: (context, index) {
+  //       final invoice = _filteredInvoices[index];
+  //       final date = DateTime.parse(invoice['createdAt']).toLocal();
+  //       return Card(
+  //         elevation: 2,
+  //         margin: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(16),
+  //         ),
+  //         child: ListTile(
+  //           contentPadding: EdgeInsets.all(16),
+  //           leading: CircleAvatar(
+  //             radius: 25,
+  //             backgroundColor: Colors.blue.shade50,
+  //             child: Icon(Icons.receipt, color: Colors.blue.shade800),
+  //           ),
+  //           title: Text(
+  //             'Facture ${invoice['number']}',
+  //             style: GoogleFonts.poppins(
+  //               fontWeight: FontWeight.w600,
+  //               fontSize: 16,
+  //             ),
+  //           ),
+  //           subtitle: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(
+  //                 invoice['clientName'],
+  //                 style: GoogleFonts.poppins(color: Colors.grey.shade700),
+  //               ),
+  //               SizedBox(height: 4),
+  //               Text(
+  //                 'Date: ${date.day}/${date.month}/${date.year}',
+  //                 style: GoogleFonts.poppins(
+  //                   fontSize: 12,
+  //                   color: Colors.grey.shade600,
+  //                 ),
+  //               ),
+  //               SizedBox(height: 4),
+  //               Container(
+  //                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //                 decoration: BoxDecoration(
+  //                   color:
+  //                       invoice['status'] == 'paid'
+  //                           ? Colors.green.shade50
+  //                           : Colors.orange.shade50,
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //                 child: Text(
+  //                   '${invoice['amount']} FCFA - ${invoice['status'] == 'paid' ? 'Payée' : 'Impayée'}',
+  //                   style: GoogleFonts.poppins(
+  //                     color:
+  //                         invoice['status'] == 'paid'
+  //                             ? Colors.green.shade700
+  //                             : Colors.orange.shade700,
+  //                     fontWeight: FontWeight.w500,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           trailing: IconButton(
+  //             icon: Icon(
+  //               invoice['status'] == 'paid' ? Icons.undo : Icons.check_circle,
+  //               color:
+  //                   invoice['status'] == 'paid'
+  //                       ? Colors.red.shade400
+  //                       : Colors.green.shade400,
+  //               size: 30,
+  //             ),
+  //             onPressed:
+  //                 () => _updateInvoiceStatus(invoice['_id'], invoice['status']),
+  //           ),
+  //         ),
+  //       ).animate().fadeIn().slideX();
+  //     },
+  //   );
+  // }
 
   Widget _buildInvoicesList() {
     return ListView.builder(
@@ -854,17 +1409,40 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
               ],
             ),
-            trailing: IconButton(
-              icon: Icon(
-                invoice['status'] == 'paid' ? Icons.undo : Icons.check_circle,
-                color:
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit, color: Colors.blue.shade400, size: 25),
+                  onPressed: () => _editInvoice(invoice),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete,
+                    color: Colors.red.shade400,
+                    size: 25,
+                  ),
+                  onPressed:
+                      () => _deleteInvoice(invoice['_id'], invoice['number']),
+                ),
+                IconButton(
+                  icon: Icon(
                     invoice['status'] == 'paid'
-                        ? Colors.red.shade400
-                        : Colors.green.shade400,
-                size: 30,
-              ),
-              onPressed:
-                  () => _updateInvoiceStatus(invoice['_id'], invoice['status']),
+                        ? Icons.undo
+                        : Icons.check_circle,
+                    color:
+                        invoice['status'] == 'paid'
+                            ? Colors.red.shade400
+                            : Colors.green.shade400,
+                    size: 30,
+                  ),
+                  onPressed:
+                      () => _updateInvoiceStatus(
+                        invoice['_id'],
+                        invoice['status'],
+                      ),
+                ),
+              ],
             ),
           ),
         ).animate().fadeIn().slideX();

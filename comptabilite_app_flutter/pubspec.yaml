@@ -45,6 +45,8 @@ dependencies:
   path_provider: ^2.1.5
   excel: ^4.0.6-nullsafety-3
   permission_handler: ^12.0.0
+  share_plus: ^10.1.4
+  dio: ^5.8.0+1
 
 dev_dependencies:
   flutter_test:
