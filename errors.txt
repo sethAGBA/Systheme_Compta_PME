@@ -1,0 +1,361 @@
+
+lib/features/invoicing/screens/invoice_screen.dart:9:8: Error: Error when reading
+'lib/features/invoicing/screens/invoice_model.dart': No such file or directory
+import 'invoice_model.dart'; // Ton modèle Facture/LigneFacture
+       ^
+lib/features/invoicing/screens/invoice_screen.dart:10:8: Error: Error when reading
+'lib/features/invoicing/screens/invoice_service.dart': No such file or directory
+import 'invoice_service.dart'; // Ton InvoiceService adapté
+       ^
+lib/features/invoicing/screens/invoice_screen.dart:23:8: Error: Type 'Facture' not found.
+  List<Facture> _invoices = [];
+       ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:24:8: Error: Type 'Facture' not found.
+  List<Facture> get invoices => _invoices;
+       ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:35:27: Error: Type 'Facture' not found.
+  Future<void> addInvoice(Facture facture) async {
+                          ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:466:51: Error: Type 'Facture' not found.
+  Future<void> _createAvoir(BuildContext context, Facture facture) async {
+                                                  ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:23:8: Error: 'Facture' isn't a type.
+  List<Facture> _invoices = [];
+       ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:30:36: Error: The getter 'Facture' isn't defined for
+the class 'InvoiceProvider'.
+ - 'InvoiceProvider' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'Facture'.
+    _invoices = data.map((json) => Facture.fromJson(json)).toList();
+                                   ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:35:27: Error: 'Facture' isn't a type.
+  Future<void> addInvoice(Facture facture) async {
+                          ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:62:29: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceProvider'.
+ - 'InvoiceProvider' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+      if (facture.statut != StatutFacture.payee && 
+                            ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:63:29: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceProvider'.
+ - 'InvoiceProvider' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+          facture.statut != StatutFacture.annulee && 
+                            ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:163:39: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  if (facture.type == FactureType.devis && facture.statut != StatutFacture.payee)
+                                      ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:163:78: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                  if (facture.type == FactureType.devis && facture.statut != StatutFacture.payee)
+                                                                             ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:165:41: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                  if (facture.statut != StatutFacture.annulee && facture.type != FactureType.annulee)
+                                        ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:165:82: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  if (facture.statut != StatutFacture.annulee && facture.type != FactureType.annulee)
+                                                                                 ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:167:39: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  if (facture.type == FactureType.standard && facture.statut == StatutFacture.payee)
+                                      ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:167:81: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                  if (facture.type == FactureType.standard && facture.statut == StatutFacture.payee)
+                                                                                ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:152:63: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  if (value == 'convertir' && facture.type == FactureType.devis) {
+                                                              ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:154:70: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                  } else if (value == 'annuler' && facture.statut != StatutFacture.annulee) {
+                                                                     ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:156:66: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  } else if (value == 'avoir' && facture.type == FactureType.standard && facture.statut
+                  == StatutFacture.payee) {
+                                                                 ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:156:108: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                  } else if (value == 'avoir' && facture.type == FactureType.standard && facture.statut
+                  == StatutFacture.payee) {
+                                                                                             ^^^^^^^^^^
+                                                                                             ^^^
+lib/features/invoicing/screens/invoice_screen.dart:183:19: Error: 'StatutFacture' isn't a type.
+        final Map<StatutFacture, double> totalsByStatus = {};
+                  ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:183:59: Error: A value of type 'Map<dynamic,
+dynamic>' can't be assigned to a variable of type 'Map<invalid-type, double>'.
+ - 'Map' is from 'dart:core'.
+        final Map<StatutFacture, double> totalsByStatus = {};
+                                                          ^
+lib/features/invoicing/screens/invoice_screen.dart:184:28: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+        for (var statut in StatutFacture.values) {
+                           ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:186:31: Error: The getter 'statut' isn't defined for
+the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'statut'.
+              .where((f) => f.statut == statut)
+                              ^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:187:44: Error: The getter 'totalTTC' isn't defined
+for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'totalTTC'.
+              .fold(0, (sum, f) => sum + f.totalTTC);
+                                           ^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:205:29: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                            StatutFacture.values[value.toInt()].name,
+                            ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:212:26: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                      x: StatutFacture.values.indexOf(e.key),
+                         ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:229:10: Error: 'LigneFacture' isn't a type.
+    List<LigneFacture> lignes = [LigneFacture(description: '', quantite: 1, prixUnitaire: 0, remise: 0,
+    rabais: 0, ristourne: 0, tva: 0)];
+         ^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:230:5: Error: 'FactureType' isn't a type.
+    FactureType type = FactureType.standard;
+    ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:236:37: Error: 'Facture' isn't a type.
+    final result = await showDialog<Facture>(
+                                    ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:244:32: Error: 'FactureType' isn't a type.
+                DropdownButton<FactureType>(
+                               ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:229:34: Error: The method 'LigneFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'LigneFacture'.
+    List<LigneFacture> lignes = [LigneFacture(description: '', quantite: 1, prixUnitaire: 0, remise: 0,
+    rabais: 0, ristourne: 0, tva: 0)];
+                                 ^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:230:24: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+    FactureType type = FactureType.standard;
+                       ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:246:26: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                  items: FactureType.values.map((t) => DropdownMenuItem(value: t, child:
+                  Text(t.name))).toList(),
+                         ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:257:29: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                if (type == FactureType.recurrente) ...[
+                            ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:275:29: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                if (type == FactureType.acompte || type == FactureType.avoir)
+                            ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:275:60: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                if (type == FactureType.acompte || type == FactureType.avoir)
+                                                           ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:280:29: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+                if (type == FactureType.acompte)
+                            ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:293:33: Error: The setter 'description' isn't
+defined for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'description'.
+                              l.description = v;
+                                ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:302:33: Error: The setter 'quantite' isn't defined
+for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'quantite'.
+                              l.quantite = int.tryParse(v) ?? 1;
+                                ^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:312:33: Error: The setter 'prixUnitaire' isn't
+defined for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'prixUnitaire'.
+                              l.prixUnitaire = double.tryParse(v) ?? 0;
+                                ^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:326:33: Error: The setter 'remise' isn't defined for
+the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'remise'.
+                              l.remise = double.tryParse(v) ?? 0;
+                                ^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:337:33: Error: The setter 'rabais' isn't defined for
+the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'rabais'.
+                              l.rabais = double.tryParse(v) ?? 0;
+                                ^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:348:33: Error: The setter 'ristourne' isn't defined
+for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named
+'ristourne'.
+                              l.ristourne = double.tryParse(v) ?? 0;
+                                ^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:359:33: Error: The setter 'tva' isn't defined for
+the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing setter, or defining a setter or field named 'tva'.
+                              l.tva = double.tryParse(v) ?? 0;
+                                ^^^
+lib/features/invoicing/screens/invoice_screen.dart:371:62: Error: The method 'LigneFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'LigneFacture'.
+                  onPressed: () => setState(() => lignes.add(LigneFacture(description: '', quantite: 1,
+                  prixUnitaire: 0, remise: 0, rabais: 0, ristourne: 0, tva: 0))),
+                                                             ^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:375:114: Error: The getter 'montantTTC' isn't
+defined for the class 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'montantTTC'.
+                  'Total TTC: ${NumberFormat.currency(symbol: "XOF").format(lignes.fold(0.0, (sum, l)
+                  => sum + l.montantTTC))}',
+                                                                                             ^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:387:55: Error: The method 'Facture' isn't defined
+for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'Facture'.
+              onPressed: () => Navigator.pop(context, Facture(
+                                                      ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:391:25: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+                statut: StatutFacture.brouillon,
+                        ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:466:51: Error: 'Facture' isn't a type.
+  Future<void> _createAvoir(BuildContext context, Facture facture) async {
+                                                  ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:467:19: Error: The method 'Facture' isn't defined
+for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'Facture'.
+    final avoir = Facture(
+                  ^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:470:13: Error: The getter 'FactureType' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'FactureType'.
+      type: FactureType.avoir,
+            ^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:471:15: Error: The getter 'StatutFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named
+'StatutFacture'.
+      statut: StatutFacture.brouillon,
+              ^^^^^^^^^^^^^
+lib/features/invoicing/screens/invoice_screen.dart:475:41: Error: The method 'LigneFacture' isn't
+defined for the class 'InvoiceScreen'.
+ - 'InvoiceScreen' is from 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart'
+ ('lib/features/invoicing/screens/invoice_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'LigneFacture'.
+      lignes: facture.lignes.map((l) => LigneFacture(

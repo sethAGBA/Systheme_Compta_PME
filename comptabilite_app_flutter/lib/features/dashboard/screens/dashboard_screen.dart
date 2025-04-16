@@ -1,23 +1,17 @@
+// filepath: /Users/cavris/Desktop/projets/Systheme_Compta_PME/comptabilite_app_flutter/lib/features/dashboard/screens/dashboard_screen.dart
 
-//il s'appel dashboard_screen.dart
-// ce fichier contient la logique de l'écran du tableau de bord
-// il utilise le package http pour effectuer des requêtes HTTP
-// il utilise le package json pour encoder et décoder les données JSON
-import 'package:ComptaFacile/features/accounting/screens/journal_screen.dart';
-import 'package:ComptaFacile/features/invoicing/screens/invoice_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import '../../../core/services/api_service.dart';
-import '../../auth/screens/login_screen.dart';
-// import '../screens/journal_screen.dart'; // Import pour la navigation
-// ... (imports inchangés)
+import 'package:ComptaFacile/core/services/api_service.dart';
+import 'package:ComptaFacile/features/auth/screens/login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({Key? key}) : super(key: key);
+
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
@@ -44,17 +38,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'Authorization': 'Bearer $token',
         },
       );
-      print('Dashboard Response: ${response.statusCode} - ${response.body}');
       if (response.statusCode == 200) {
         setState(() => _dashboardData = jsonDecode(response.body));
       } else if (response.statusCode == 401) {
         await ApiService.logout();
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) =>  LoginScreen()));
       } else {
         setState(() => _errorMessage = jsonDecode(response.body)['error'] ?? 'Erreur de chargement');
       }
     } catch (e) {
-      print('Erreur réseau dans Dashboard: $e');
       setState(() => _errorMessage = 'Erreur réseau: $e');
     } finally {
       setState(() => _isLoading = false);
@@ -63,95 +55,104 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _logout() async {
     await ApiService.logout();
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) =>  LoginScreen()));
   }
 
-  Future<void> _navigateToJournal() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => JournalScreen()));
-    _fetchDashboardData();
-  }
-
-  Future<void> _navigateToInvoices() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceScreen()));
-    _fetchDashboardData(); // Rafraîchit au retour
-  }
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: Container(
-     decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Colors.blue.shade800, Colors.white],
-      ),
-    ),
-      child: CustomScrollView(
-        slivers: [
-          if (_isLoading)
-            SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blue.shade800, Colors.white],
+          ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade800, Colors.blue.shade500],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
-            )
-          else if (_errorMessage != null)
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 80, color: Colors.red.shade300),
-                    SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.red.shade400,
+              title: Text(
+                'Tableau de bord',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _fetchDashboardData,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  onPressed: () => Navigator.pushNamed(context, '/invoices'),
+                  tooltip: 'Factures',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: _logout,
+                ),
+              ],
+            ),
+            if (_isLoading)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
+                ),
+              )
+            else if (_errorMessage != null)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 80, color: Colors.red.shade300),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.red.shade400,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...[
-              SliverAppBar(
-                floating: false,
-                pinned: true,
-                stretch: true,
-                expandedHeight: 0,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade800, Colors.blue.shade500],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchDashboardData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade700,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          'Réessayer',
+                          style: GoogleFonts.poppins(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                title: Text(
-                  'Tableau de bord',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                centerTitle: true,
-                actions: [
-                  IconButton(
-                    icon: Icon(Icons.logout, color: Colors.white),
-                    onPressed: _logout,
-                  ),
-                ],
-              ),
+              )
+            else
               SliverPadding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     Text(
@@ -162,150 +163,119 @@ Widget build(BuildContext context) {
                         color: Colors.blue.shade900,
                       ),
                     ).animate().fadeIn().slideX(),
-                    SizedBox(height: 20),
-                    _buildMetricsGrid(),
-                    SizedBox(height: 20),
-                    _buildActionButtons(),
+                    const SizedBox(height: 20),
+                    _buildMetricsGrid(context),
                   ]),
                 ),
               ),
-            ],
-        ],
-      ),
-      ),
-  
-  );
-}
-
-// Ajoutez cette nouvelle méthode pour la grille de métriques
-Widget _buildMetricsGrid() {
-  return GridView.count(
-    shrinkWrap: true,
-    crossAxisCount: 2,
-    childAspectRatio: 1.3, // Ajusté pour donner plus d'espace vertical
-    crossAxisSpacing: 16,
-    mainAxisSpacing: 16,
-    physics: NeverScrollableScrollPhysics(),
-    children: [
-      _buildMetricCard(
-        'CA',  // Raccourci pour Chiffre d'affaires
-        NumberFormat.compact().format(_dashboardData!['revenue']) + ' FCFA',
-        Icons.monetization_on,
-      ),
-      _buildMetricCard(
-        'Factures',
-        _dashboardData!['unpaidInvoices'].toString(),
-        Icons.receipt_long,
-      ),
-      _buildMetricCard(
-        'Solde',
-        NumberFormat.compact().format(_dashboardData!['totalBalance']) + ' FCFA',
-        Icons.account_balance_wallet,
-      ),
-      _buildMetricCard(
-        'Écritures',
-        _dashboardData!['totalEntries'].toString(),
-        Icons.description,
-      ),
-    ],
-  ).animate().fadeIn();
-}
-// Modifiez la méthode _buildMetricCard
-Widget _buildMetricCard(String title, String value, IconData icon) {
-  return Card(
-    elevation: 8,
-    shadowColor: Colors.blue.withOpacity(0.2),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    child: Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12), // Padding ajusté
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.blue.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          ],
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 28, color: Colors.blue.shade700), // Taille d'icône réduite
-          SizedBox(height: 4), // Espacement réduit
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey.shade700,
+    );
+  }
+
+  Widget _buildMetricsGrid(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      crossAxisCount: 2,
+      childAspectRatio: 1.3,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _buildMetricCard(
+          'CA',
+          _dashboardData != null
+              ? NumberFormat.compact().format(_dashboardData!['revenue'] ?? 0) + ' FCFA'
+              : '0 FCFA',
+          Icons.monetization_on,
+          () => Navigator.pushNamed(context, '/dashboard'),
+        ),
+        _buildMetricCard(
+          'Factures',
+          _dashboardData != null ? (_dashboardData!['unpaidInvoices'] ?? 0).toString() : '0',
+          Icons.receipt_long,
+          () => Navigator.pushNamed(context, '/invoices'),
+        ),
+        _buildMetricCard(
+          'Solde',
+          _dashboardData != null
+              ? NumberFormat.compact().format(_dashboardData!['totalBalance'] ?? 0) + ' FCFA'
+              : '0 FCFA',
+          Icons.account_balance_wallet,
+          () => Navigator.pushNamed(context, '/account'),
+        ),
+        _buildMetricCard(
+          'Écritures',
+          _dashboardData != null ? (_dashboardData!['totalEntries'] ?? 0).toString() : '0',
+          Icons.description,
+          () => Navigator.pushNamed(context, '/journal'),
+        ),
+        _buildMetricCard(
+          'Grand Livre',
+          _dashboardData != null ? (_dashboardData!['totalEntries'] ?? 0).toString() : '0',
+          Icons.library_books,
+          () => Navigator.pushNamed(context, '/ledger'),
+        ),
+        _buildMetricCard(
+          'Balance',
+          _dashboardData != null ? (_dashboardData!['totalBalance'] ?? 0).toString() : '0',
+          Icons.balance,
+          () => Navigator.pushNamed(context, '/balance'),
+        ),
+      ],
+    ).animate().fadeIn();
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 8,
+        shadowColor: Colors.blue.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.blue.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-          Flexible(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 28, color: Colors.blue.shade700),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+              Flexible(
+                child: Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  ).animate().fadeIn().scale();
-}
-// Ajoutez cette nouvelle méthode pour les boutons d'action
-Widget _buildActionButtons() {
-  return Column(
-    children: [
-      _buildActionButton(
-        'Journal Comptable',
-        Icons.book,
-        _navigateToJournal,
-      ),
-      SizedBox(height: 12),
-      _buildActionButton(
-        'Gestion des Factures',
-        Icons.receipt,
-        _navigateToInvoices,
-      ),
-    ],
-  ).animate().fadeIn().slideY();
-}
-
-Widget _buildActionButton(String title, IconData icon, VoidCallback onPressed) {
-  return Container(
-    width: double.infinity,
-    height: 60,
-    child: ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
         ),
-        elevation: 4,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon),
-          SizedBox(width: 12),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}}
+    ).animate().fadeIn().scale();
+  }
+}

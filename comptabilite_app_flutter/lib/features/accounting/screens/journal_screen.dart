@@ -15,6 +15,7 @@ import '../../../core/services/journal_service.dart';
 import '../../../core/constants/strings.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:async';
+
 class JournalScreen extends StatefulWidget {
   @override
   _JournalScreenState createState() => _JournalScreenState();
@@ -56,12 +57,13 @@ class _JournalScreenState extends State<JournalScreen> {
       _debounce = Timer(const Duration(milliseconds: 300), _filterEcritures);
     });
   }
+
   // Ajouter cette méthode
   Future<void> _chargerFactures() async {
     try {
       final invoices = await _invoiceService.chargerFactures();
       setState(() {
-        _invoices = invoices;
+        // _invoices = invoices;
       });
     } catch (e) {
       print('Erreur de chargement des factures: $e');
@@ -69,56 +71,74 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   Future<void> _ajouterEcriture() async {
-  if (_descriptionController.text.isEmpty ||
-      _montantController.text.isEmpty ||
-      _entiteDebitController.text.isEmpty ||
-      _entiteCreditController.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(Strings.champsVides), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
-    );
-    return;
+    if (_descriptionController.text.isEmpty ||
+        _montantController.text.isEmpty ||
+        _entiteDebitController.text.isEmpty ||
+        _entiteCreditController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Strings.champsVides),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^\d*\.?\d+$').hasMatch(_montantController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Strings.montantInvalide),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _chargement = true);
+    try {
+      final ecriture = {
+        'description': _descriptionController.text,
+        'debitEntityType': _typeEntiteDebit,
+        'debitEntityName': _entiteDebitController.text,
+        'creditEntityType': _typeEntiteCredit,
+        'creditEntityName': _entiteCreditController.text,
+        'amount': double.parse(_montantController.text),
+        'reference':
+            _referenceController.text.isEmpty
+                ? null
+                : _referenceController.text,
+      };
+      await _journalService.ajouterEcriture(ecriture);
+      await _chargerEcritures();
+      _descriptionController.clear();
+      _montantController.clear();
+      _entiteDebitController.clear();
+      _entiteCreditController.clear();
+      _referenceController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Strings.ecritureAjoutee),
+          backgroundColor: Colors.green.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      print('Erreur dans _ajouterEcriture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${Strings.erreurReseau}$e'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _chargement = false);
+    }
   }
 
-  if (!RegExp(r'^\d*\.?\d+$').hasMatch(_montantController.text)) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(Strings.montantInvalide), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
-    );
-    return;
-  }
-
-  setState(() => _chargement = true);
-  try {
-    final ecriture = {
-      'description': _descriptionController.text,
-      'debitEntityType': _typeEntiteDebit,
-      'debitEntityName': _entiteDebitController.text,
-      'creditEntityType': _typeEntiteCredit,
-      'creditEntityName': _entiteCreditController.text,
-      'amount': double.parse(_montantController.text),
-      'reference': _referenceController.text.isEmpty ? null : _referenceController.text,
-    };
-    await _journalService.ajouterEcriture(ecriture);
-    await _chargerEcritures();
-    _descriptionController.clear();
-    _montantController.clear();
-    _entiteDebitController.clear();
-    _entiteCreditController.clear();
-    _referenceController.clear();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(Strings.ecritureAjoutee), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
-    );
-  } catch (e) {
-    print('Erreur dans _ajouterEcriture: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${Strings.erreurReseau}$e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
-    );
-  } finally {
-    setState(() => _chargement = false);
-  }
-}
- 
- 
   Future<void> _chargerEcritures() async {
     setState(() => _chargement = true);
     try {
@@ -194,82 +214,167 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-
-
   Future<void> _editEcriture(Map<String, dynamic> ecriture) async {
-  final descriptionController = TextEditingController(text: ecriture['description']?.toString() ?? '');
-  final montantController = TextEditingController(text: ecriture['amount']?.toString() ?? '');
-  final entiteDebitController = TextEditingController(text: ecriture['debitEntityName']?.toString() ?? '');
-  final entiteCreditController = TextEditingController(text: ecriture['creditEntityName']?.toString() ?? '');
-  final referenceController = TextEditingController(text: ecriture['reference']?.toString() ?? '');
-  String? typeEntiteDebit = ecriture['debitEntityType']?.toString() ?? _typeOptions.first;
-  String? typeEntiteCredit = ecriture['creditEntityType']?.toString() ?? _typeOptions.first;
-
-  final updated = await showDialog<Map<String, dynamic>>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Modifier l’écriture "${ecriture['description']}"'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: descriptionController, decoration: InputDecoration(labelText: 'Description')),
-            DropdownButtonFormField<String>(value: typeEntiteDebit, items: _typeOptions.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(), onChanged: (value) => typeEntiteDebit = value, decoration: InputDecoration(labelText: 'Type Débit')),
-            TextField(controller: entiteDebitController, decoration: InputDecoration(labelText: 'Entité Débit')),
-            DropdownButtonFormField<String>(value: typeEntiteCredit, items: _typeOptions.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(), onChanged: (value) => typeEntiteCredit = value, decoration: InputDecoration(labelText: 'Type Crédit')),
-            TextField(controller: entiteCreditController, decoration: InputDecoration(labelText: 'Entité Crédit')),
-            TextField(controller: montantController, decoration: InputDecoration(labelText: 'Montant (FCFA)'), keyboardType: TextInputType.number),
-            TextField(controller: referenceController, decoration: InputDecoration(labelText: 'Référence (optionnel)')),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
-        TextButton(
-          onPressed: () {
-            if (descriptionController.text.isEmpty || montantController.text.isEmpty || entiteDebitController.text.isEmpty || entiteCreditController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.champsVides), backgroundColor: Colors.red.shade400));
-              return;
-            }
-            if (!RegExp(r'^\d*\.?\d+$').hasMatch(montantController.text)) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(Strings.montantInvalide), backgroundColor: Colors.red.shade400));
-              return;
-            }
-            Navigator.pop(context, {
-              'description': descriptionController.text,
-              'debitEntityType': typeEntiteDebit,
-              'debitEntityName': entiteDebitController.text,
-              'creditEntityType': typeEntiteCredit,
-              'creditEntityName': entiteCreditController.text,
-              'amount': double.parse(montantController.text),
-              'reference': referenceController.text.isEmpty ? null : referenceController.text,
-              'date': ecriture['date'] ?? DateTime.now().toIso8601String(),
-            });
-          },
-          child: Text('Enregistrer'),
-        ),
-      ],
-    ),
-  );
-
-  if (updated == null) return;
-
-  setState(() => _chargement = true);
-  try {
-    await _journalService.mettreAJourEcriture(ecriture['_id'], updated);
-    await _chargerEcritures(); // Recharge les données pour synchronisation
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Écriture mise à jour'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating),
+    final descriptionController = TextEditingController(
+      text: ecriture['description']?.toString() ?? '',
     );
-  } catch (e) {
-    print('Erreur dans _editEcriture: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erreur lors de la mise à jour : $e'), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
+    final montantController = TextEditingController(
+      text: ecriture['amount']?.toString() ?? '',
     );
-  } finally {
-    setState(() => _chargement = false);
+    final entiteDebitController = TextEditingController(
+      text: ecriture['debitEntityName']?.toString() ?? '',
+    );
+    final entiteCreditController = TextEditingController(
+      text: ecriture['creditEntityName']?.toString() ?? '',
+    );
+    final referenceController = TextEditingController(
+      text: ecriture['reference']?.toString() ?? '',
+    );
+    String? typeEntiteDebit =
+        ecriture['debitEntityType']?.toString() ?? _typeOptions.first;
+    String? typeEntiteCredit =
+        ecriture['creditEntityType']?.toString() ?? _typeOptions.first;
+
+    final updated = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Modifier l’écriture "${ecriture['description']}"'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(labelText: 'Description'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: typeEntiteDebit,
+                    items:
+                        _typeOptions
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ),
+                            )
+                            .toList(),
+                    onChanged: (value) => typeEntiteDebit = value,
+                    decoration: InputDecoration(labelText: 'Type Débit'),
+                  ),
+                  TextField(
+                    controller: entiteDebitController,
+                    decoration: InputDecoration(labelText: 'Entité Débit'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: typeEntiteCredit,
+                    items:
+                        _typeOptions
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ),
+                            )
+                            .toList(),
+                    onChanged: (value) => typeEntiteCredit = value,
+                    decoration: InputDecoration(labelText: 'Type Crédit'),
+                  ),
+                  TextField(
+                    controller: entiteCreditController,
+                    decoration: InputDecoration(labelText: 'Entité Crédit'),
+                  ),
+                  TextField(
+                    controller: montantController,
+                    decoration: InputDecoration(labelText: 'Montant (FCFA)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: referenceController,
+                    decoration: InputDecoration(
+                      labelText: 'Référence (optionnel)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (descriptionController.text.isEmpty ||
+                      montantController.text.isEmpty ||
+                      entiteDebitController.text.isEmpty ||
+                      entiteCreditController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(Strings.champsVides),
+                        backgroundColor: Colors.red.shade400,
+                      ),
+                    );
+                    return;
+                  }
+                  if (!RegExp(
+                    r'^\d*\.?\d+$',
+                  ).hasMatch(montantController.text)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(Strings.montantInvalide),
+                        backgroundColor: Colors.red.shade400,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, {
+                    'description': descriptionController.text,
+                    'debitEntityType': typeEntiteDebit,
+                    'debitEntityName': entiteDebitController.text,
+                    'creditEntityType': typeEntiteCredit,
+                    'creditEntityName': entiteCreditController.text,
+                    'amount': double.parse(montantController.text),
+                    'reference':
+                        referenceController.text.isEmpty
+                            ? null
+                            : referenceController.text,
+                    'date':
+                        ecriture['date'] ?? DateTime.now().toIso8601String(),
+                  });
+                },
+                child: Text('Enregistrer'),
+              ),
+            ],
+          ),
+    );
+
+    if (updated == null) return;
+
+    setState(() => _chargement = true);
+    try {
+      await _journalService.mettreAJourEcriture(ecriture['_id'], updated);
+      await _chargerEcritures(); // Recharge les données pour synchronisation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Écriture mise à jour'),
+          backgroundColor: Colors.green.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      print('Erreur dans _editEcriture: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la mise à jour : $e'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _chargement = false);
+    }
   }
-}
 
   void _filterEcritures() {
     final query = _searchController.text.toLowerCase().trim();

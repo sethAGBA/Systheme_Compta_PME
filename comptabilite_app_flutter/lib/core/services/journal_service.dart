@@ -31,7 +31,34 @@ class JournalService {
     }
     return jsonDecode(response.body); // Retourner l'entrée créée
   }
+Future<void> ajouterFacture(Map<String, dynamic> facture) async {
+    final token = await ApiService.getToken();
+    final response = await http.post(
+      Uri.parse('${ApiService.baseUrl}/invoices'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode(facture),
+    );
+    if (response.statusCode != 201) throw Exception('Erreur: ${response.body}');
+  }
 
+  Future<void> convertirDevis(String id) async {
+    final token = await ApiService.getToken();
+    final response = await http.put(
+      Uri.parse('${ApiService.baseUrl}/invoices/$id/convert'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) throw Exception('Erreur: ${response.body}');
+  }
+
+  Future<void> annulerFacture(String id, String motif) async {
+    final token = await ApiService.getToken();
+    final response = await http.put(
+      Uri.parse('${ApiService.baseUrl}/invoices/$id/cancel'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'motifAnnulation': motif}),
+    );
+    if (response.statusCode != 200) throw Exception('Erreur: ${response.body}');
+  }
   Future<List<Map<String, dynamic>>> chargerEcritures() async {
     final token = await ApiService.getToken();
     final response = await http.get(
